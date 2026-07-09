@@ -1,0 +1,7 @@
+spring:
+    application.name: property-service
+    ai:
+        mcp:
+            server:
+                name: property-service
+                version: 0.0.1-SNAPSHOT
