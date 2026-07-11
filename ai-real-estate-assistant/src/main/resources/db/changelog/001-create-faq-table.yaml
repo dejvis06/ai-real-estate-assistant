@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-faq-table
+      author: ai-real-estate-assistant
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS faq (
+                  id         BIGSERIAL    PRIMARY KEY,
+                  question   VARCHAR(1000) NOT NULL,
+                  answer     TEXT          NOT NULL,
+                  category   VARCHAR(50)   NOT NULL,
+                  active     BOOLEAN       NOT NULL DEFAULT TRUE,
+                  created_at TIMESTAMP     NOT NULL,
+                  updated_at TIMESTAMP     NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS faq_keywords (
+                  faq_id  BIGINT       NOT NULL REFERENCES faq(id) ON DELETE CASCADE,
+                  keyword VARCHAR(200) NOT NULL
+              );
+
+              CREATE INDEX IF NOT EXISTS idx_faq_category ON faq(category);
+              CREATE INDEX IF NOT EXISTS idx_faq_active   ON faq(active);
+              CREATE INDEX IF NOT EXISTS idx_faq_keywords_faq_id ON faq_keywords(faq_id);

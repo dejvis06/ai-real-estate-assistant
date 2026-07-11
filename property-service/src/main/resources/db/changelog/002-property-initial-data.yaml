@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-property-initial-data
+      author: property-service
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO property (reference_code, title, description, property_type, listing_type, status,
+                                    price, currency, bedrooms, bathrooms, area, floor, total_floors, year_built,
+                                    address, city, country, latitude, longitude, agent_id, created_at, updated_at)
+              VALUES
+              ('PROP-1001',
+               'Modern 2BR Apartment in City Centre',
+               'A bright, fully furnished apartment in the heart of the city. Features an open-plan kitchen, spacious living area, and two well-appointed bedrooms. Walking distance to metro, shops, and restaurants.',
+               'APARTMENT', 'SALE', 'AVAILABLE',
+               185000.00, 'EUR', 2, 1, 75.50, 4, 8, 2019,
+               'Rruga e Elbasanit 12', 'Tirana', 'Albania',
+               41.32754000, 19.81869000, 1, NOW(), NOW()),
+
+              ('PROP-1002',
+               'Luxury Villa with Pool – Tuscany',
+               'Stunning 4-bedroom villa nestled in the rolling hills of Tuscany. Features a private swimming pool, panoramic views, olive grove, and fully renovated interiors. Ideal as a holiday home or investment property.',
+               'VILLA', 'RENT', 'AVAILABLE',
+               4500.00, 'EUR', 4, 3, 280.00, 1, 2, 1975,
+               'Via della Vigna Nuova 18', 'Florence', 'Italy',
+               43.77040000, 11.24869000, 2, NOW(), NOW()),
+
+              ('PROP-1003',
+               'Prime Office Space – Central London',
+               'Contemporary Grade-A office space in the City of London. Open-plan floor with meeting rooms, kitchen, and reception area. Excellent transport links — 2 minutes from Bank station.',
+               'OFFICE', 'SALE', 'AVAILABLE',
+               1250000.00, 'GBP', NULL, NULL, 210.00, 3, 10, 2015,
+               '10 Threadneedle Street', 'London', 'United Kingdom',
+               51.51336000, -0.08838000, 3, NOW(), NOW());
+
+              -- Images
+              INSERT INTO property_image (property_id, url, display_order, is_primary, created_at) VALUES
+              (1, 'https://images.example.com/prop-1001/main.jpg',   0, TRUE,  NOW()),
+              (1, 'https://images.example.com/prop-1001/living.jpg', 1, FALSE, NOW()),
+              (1, 'https://images.example.com/prop-1001/bedroom.jpg',2, FALSE, NOW()),
+              (2, 'https://images.example.com/prop-1002/main.jpg',   0, TRUE,  NOW()),
+              (2, 'https://images.example.com/prop-1002/pool.jpg',   1, FALSE, NOW()),
+              (2, 'https://images.example.com/prop-1002/garden.jpg', 2, FALSE, NOW()),
+              (3, 'https://images.example.com/prop-1003/main.jpg',   0, TRUE,  NOW()),
+              (3, 'https://images.example.com/prop-1003/office.jpg', 1, FALSE, NOW());
+
+              -- Amenities
+              INSERT INTO property_amenity (property_id, name, created_at) VALUES
+              (1, 'Elevator',         NOW()),
+              (1, 'Parking',          NOW()),
+              (1, 'Security System',  NOW()),
+              (2, 'Swimming Pool',    NOW()),
+              (2, 'Garden',           NOW()),
+              (2, 'Terrace',          NOW()),
+              (2, 'BBQ Area',         NOW()),
+              (2, 'Olive Grove',      NOW()),
+              (3, 'Meeting Rooms',    NOW()),
+              (3, 'Reception',        NOW()),
+              (3, 'Kitchen',          NOW()),
+              (3, 'Air Conditioning', NOW());
+
+              -- Nearby Places
+              INSERT INTO property_nearby_place (property_id, name, type, distance, distance_unit, latitude, longitude) VALUES
+              (1, 'Tirana International Airport', 'Airport',  17.00, 'km', 41.41471000, 19.72055000),
+              (1, 'Blloku',                       'Park',      0.80, 'km', 41.32297000, 19.82003000),
+              (1, 'American Hospital',             'Hospital',  1.20, 'km', 41.33055000, 19.82747000),
+              (2, 'Florence Cathedral',            'Landmark',  2.50, 'km', 43.77309000, 11.25642000),
+              (2, 'Mercato Centrale',              'Market',    3.00, 'km', 43.77631000, 11.25381000),
+              (3, 'Bank Station',                  'Metro',     0.20, 'km', 51.51332000, -0.08852000),
+              (3, 'St. Paul''s Cathedral',         'Landmark',  0.50, 'km', 51.51381000, -0.09834000);

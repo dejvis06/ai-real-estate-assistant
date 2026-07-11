@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-faq-initial-data
+      author: ai-real-estate-assistant
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO faq (question, answer, category, active, created_at, updated_at) VALUES
+              ('How do I schedule a property viewing?',
+               'You can request a viewing directly from the property page by clicking "Schedule Viewing", or contact our team by phone or email. A real estate agent will confirm the date and time within 24 hours.',
+               'BUYING', true, NOW(), NOW()),
+
+              ('What documents do I need to purchase a property?',
+               'To purchase a property you typically need: a valid government-issued ID, proof of funds or mortgage pre-approval, tax identification number, and signed sale agreement. Our agents will guide you through the full checklist.',
+               'BUYING', true, NOW(), NOW()),
+
+              ('How long does the property purchase process take?',
+               'A typical property purchase takes 4–8 weeks from offer acceptance to completion. This includes due diligence, mortgage approval (if applicable), contract signing, and title transfer.',
+               'BUYING', true, NOW(), NOW()),
+
+              ('How do I list my property for sale?',
+               'To list your property, contact our team and we will arrange a free valuation visit. Once you agree on the listing price, we will prepare professional photos, a description, and publish the listing on all major platforms.',
+               'SELLING', true, NOW(), NOW()),
+
+              ('How is my property price determined?',
+               'We determine the listing price through a Comparative Market Analysis (CMA), which evaluates recent sales of similar properties in your area, current market conditions, property condition, and location factors.',
+               'SELLING', true, NOW(), NOW()),
+
+              ('What mortgage options are available?',
+               'We work with a network of trusted lenders offering fixed-rate and variable-rate mortgages, as well as government-backed loan programs. Our mortgage advisors can help you find the best option based on your financial profile.',
+               'FINANCING', true, NOW(), NOW()),
+
+              ('What is the typical down payment required?',
+               'Down payment requirements vary by country and loan type. Generally, a minimum of 10–20% of the purchase price is required. Some programs allow lower down payments for first-time buyers. Contact us for specific guidance.',
+               'FINANCING', true, NOW(), NOW()),
+
+              ('What are your business hours and how can I contact an agent?',
+               'Our offices are open Monday to Friday 9:00–18:00 and Saturday 10:00–14:00. You can reach us by phone, email, or by submitting a contact form on our website. An agent will respond within one business day.',
+               'COMPANY', true, NOW(), NOW());
+
+              INSERT INTO faq_keywords (faq_id, keyword) VALUES
+              (1, 'viewing'), (1, 'appointment'), (1, 'visit'), (1, 'schedule'),
+              (2, 'documents'), (2, 'paperwork'), (2, 'requirements'), (2, 'buying process'),
+              (3, 'timeline'), (3, 'process'), (3, 'how long'), (3, 'purchase time'),
+              (4, 'list property'), (4, 'sell'), (4, 'listing'), (4, 'valuation'),
+              (5, 'price'), (5, 'valuation'), (5, 'market value'), (5, 'appraisal'),
+              (6, 'mortgage'), (6, 'loan'), (6, 'financing'), (6, 'lender'),
+              (7, 'down payment'), (7, 'deposit'), (7, 'upfront cost'), (7, 'equity'),
+              (8, 'contact'), (8, 'hours'), (8, 'agent'), (8, 'support');

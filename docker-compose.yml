@@ -1,0 +1,56 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: ai-real-estate-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  property-service:
+    build:
+      context: ./property-service
+    container_name: property-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/property_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-real-estate-assistant:
+    build:
+      context: ./ai-real-estate-assistant
+    container_name: ai-real-estate-assistant
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ai_assistant_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      MCP_PROPERTY_SERVICE_URL: http://property-service:8081/sse
+    depends_on:
+      postgres:
+        condition: service_healthy
+      property-service:
+        condition: service_started
+
+volumes:
+  postgres_data:

@@ -1,7 +1,32 @@
 spring:
-    application.name: property-service
-    ai:
-        mcp:
-            server:
-                name: property-service
-                version: 0.0.1-SNAPSHOT
+  application.name: property-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/property_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  ai:
+    mcp:
+      server:
+        name: property-service
+        version: 0.0.1-SNAPSHOT
+        sse-message-endpoint: /sse/message
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.property: INFO
+    org.springframework.ai: DEBUG

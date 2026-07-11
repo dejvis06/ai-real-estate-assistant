@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none  # Liquibase manages schema; skip Hibernate validation in tests
+
+  ai:
+    mcp:
+      client:
+        enabled: false  # ToolCallbackProvider is mocked; don't attempt SSE connections
+    vectorstore:
+      pgvector:
+        initialize-schema: false  # VectorStore is mocked; skip pgvector schema init
