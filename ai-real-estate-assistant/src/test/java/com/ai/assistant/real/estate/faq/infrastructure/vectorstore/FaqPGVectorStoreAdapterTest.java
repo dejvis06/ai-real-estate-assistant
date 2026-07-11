@@ -20,16 +20,16 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class FaqVectorStoreAdapterTest {
+class FaqPGVectorStoreAdapterTest {
 
     @Mock
     VectorStore vectorStore;
 
-    FaqVectorStoreAdapter adapter;
+    FaqPGVectorStoreAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        adapter = new FaqVectorStoreAdapter(vectorStore);
+        adapter = new FaqPGVectorStoreAdapter(vectorStore);
     }
 
     // ── add ──────────────────────────────────────────────────────────────────

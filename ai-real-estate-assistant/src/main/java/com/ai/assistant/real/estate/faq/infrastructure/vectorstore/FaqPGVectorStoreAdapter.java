@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class FaqVectorStoreAdapter implements FaqVectorStorePort {
+public class FaqPGVectorStoreAdapter implements FaqVectorStorePort {
 
-    private static final Logger log = LoggerFactory.getLogger(FaqVectorStoreAdapter.class);
+    private static final Logger log = LoggerFactory.getLogger(FaqPGVectorStoreAdapter.class);
 
     private final VectorStore vectorStore;
 
-    public FaqVectorStoreAdapter(VectorStore vectorStore) {
+    public FaqPGVectorStoreAdapter(VectorStore vectorStore) {
         this.vectorStore = vectorStore;
     }
 
