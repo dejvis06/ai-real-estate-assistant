@@ -32,6 +32,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   ai-real-estate-assistant:
     build:
@@ -45,12 +51,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ai_assistant_db
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      MCP_PROPERTY_SERVICE_URL: http://property-service:8081/sse
+      MCP_PROPERTY_SERVICE_URL: http://property-service:8081
     depends_on:
       postgres:
         condition: service_healthy
       property-service:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres_data:
