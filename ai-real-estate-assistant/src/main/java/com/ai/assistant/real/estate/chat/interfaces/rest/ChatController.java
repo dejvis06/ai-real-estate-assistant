@@ -2,8 +2,7 @@ package com.ai.assistant.real.estate.chat.interfaces.rest;
 
 import com.ai.assistant.real.estate.chat.application.dto.ChatRequest;
 import com.ai.assistant.real.estate.chat.application.dto.ChatResponse;
-import org.springframework.ai.chat.client.ChatClient;
-
+import com.ai.assistant.real.estate.chat.application.service.ChatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final ChatClient assistant;
+    private final ChatService chatService;
 
-    public ChatController(ChatClient assistant) {
-        this.assistant = assistant;
+    public ChatController(ChatService chatService) {
+        this.chatService = chatService;
     }
 
     @PostMapping
@@ -22,11 +21,6 @@ public class ChatController {
             @RequestBody ChatRequest request,
             @RequestHeader(value = "X-Conversation-Id", defaultValue = "default") String conversationId) {
 
-        String content = assistant.prompt(request.message())
-                .advisors(a -> a.param("conversationId", conversationId))
-                .call()
-                .content();
-
-        return ResponseEntity.ok(new ChatResponse(content));
+        return ResponseEntity.ok(chatService.chat(request.message(), conversationId));
     }
 }
