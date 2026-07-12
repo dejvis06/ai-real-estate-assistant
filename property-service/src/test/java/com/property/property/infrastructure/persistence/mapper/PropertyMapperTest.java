@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +48,7 @@ class PropertyMapperTest {
     void toDomain_withImages_shouldMapImages() {
         PropertyJpaEntity entity = buildPropertyEntity();
         var img = buildImageEntity(entity);
-        entity.setImages(List.of(img));
+        entity.setImages(Set.of(img));
 
         Property property = mapper.toDomain(entity);
 
@@ -63,7 +63,7 @@ class PropertyMapperTest {
     void toDomain_withAmenities_shouldMapAmenities() {
         PropertyJpaEntity entity = buildPropertyEntity();
         var amenity = buildAmenityEntity(entity, "Pool");
-        entity.setAmenities(List.of(amenity));
+        entity.setAmenities(Set.of(amenity));
 
         Property property = mapper.toDomain(entity);
 
@@ -75,7 +75,7 @@ class PropertyMapperTest {
     void toDomain_withNearbyPlaces_shouldMapNearbyPlaces() {
         PropertyJpaEntity entity = buildPropertyEntity();
         var place = buildNearbyPlaceEntity(entity, "School", "School");
-        entity.setNearbyPlaces(List.of(place));
+        entity.setNearbyPlaces(Set.of(place));
 
         Property property = mapper.toDomain(entity);
 
@@ -101,7 +101,7 @@ class PropertyMapperTest {
     @Test
     void toDomain_resultImages_shouldBeUnmodifiable() {
         PropertyJpaEntity entity = buildPropertyEntity();
-        entity.setImages(List.of(buildImageEntity(entity)));
+        entity.setImages(Set.of(buildImageEntity(entity)));
 
         Property property = mapper.toDomain(entity);
 

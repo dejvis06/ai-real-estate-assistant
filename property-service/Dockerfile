@@ -10,5 +10,5 @@ FROM eclipse-temurin:25-jdk
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/*.jar app.jar
-EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 8081 5005
+ENTRYPOINT ["java", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", "-jar", "app.jar"]

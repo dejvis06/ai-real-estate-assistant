@@ -42,7 +42,7 @@ public class ChatCommandLineRunner implements CommandLineRunner {
 
                 System.out.print("Assistant: ");
                 String response = assistant.prompt(input)
-                        .advisors(a -> a.param("conversationId", CONVERSATION_ID))
+                        .advisors(a -> a.param("chat_memory_conversation_id", CONVERSATION_ID))
                         .call()
                         .content();
                 System.out.println(response);

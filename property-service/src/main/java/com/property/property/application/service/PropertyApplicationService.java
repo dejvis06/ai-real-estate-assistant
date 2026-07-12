@@ -5,6 +5,8 @@ import com.property.property.domain.model.ListingType;
 import com.property.property.domain.model.PropertySearchCriteria;
 import com.property.property.domain.model.PropertyType;
 import com.property.property.domain.repository.PropertyRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,8 @@ import java.util.Optional;
 @Service
 @Transactional(readOnly = true)
 public class PropertyApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(PropertyApplicationService.class);
 
     private final PropertyRepository propertyRepository;
 
@@ -32,13 +36,17 @@ public class PropertyApplicationService {
                 maxPrice,
                 minBedrooms
         );
-        return propertyRepository.findByCriteria(criteria).stream()
+        var results = propertyRepository.findByCriteria(criteria).stream()
                 .map(PropertyResponse::from)
                 .toList();
+        log.info("searchProperties found {} result(s) for criteria: {}", results.size(), criteria);
+        return results;
     }
 
     public Optional<PropertyResponse> getPropertyByReferenceCode(String referenceCode) {
-        return propertyRepository.findByReferenceCode(referenceCode)
+        var result = propertyRepository.findByReferenceCode(referenceCode)
                 .map(PropertyResponse::from);
+        log.info("getPropertyByReferenceCode [{}]: {}", referenceCode, result.isPresent() ? "found" : "not found");
+        return result;
     }
 }

@@ -7,8 +7,8 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "property")
@@ -74,13 +74,13 @@ public class PropertyJpaEntity {
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("displayOrder ASC")
-    private List<PropertyImageJpaEntity> images = new ArrayList<>();
+    private Set<PropertyImageJpaEntity> images = new HashSet<>();
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<PropertyAmenityJpaEntity> amenities = new ArrayList<>();
+    private Set<PropertyAmenityJpaEntity> amenities = new HashSet<>();
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<PropertyNearbyPlaceJpaEntity> nearbyPlaces = new ArrayList<>();
+    private Set<PropertyNearbyPlaceJpaEntity> nearbyPlaces = new HashSet<>();
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -130,12 +130,12 @@ public class PropertyJpaEntity {
     public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
     public Long getAgentId() { return agentId; }
     public void setAgentId(Long agentId) { this.agentId = agentId; }
-    public List<PropertyImageJpaEntity> getImages() { return images; }
-    public void setImages(List<PropertyImageJpaEntity> images) { this.images = images; }
-    public List<PropertyAmenityJpaEntity> getAmenities() { return amenities; }
-    public void setAmenities(List<PropertyAmenityJpaEntity> amenities) { this.amenities = amenities; }
-    public List<PropertyNearbyPlaceJpaEntity> getNearbyPlaces() { return nearbyPlaces; }
-    public void setNearbyPlaces(List<PropertyNearbyPlaceJpaEntity> nearbyPlaces) { this.nearbyPlaces = nearbyPlaces; }
+    public Set<PropertyImageJpaEntity> getImages() { return images; }
+    public void setImages(Set<PropertyImageJpaEntity> images) { this.images = images; }
+    public Set<PropertyAmenityJpaEntity> getAmenities() { return amenities; }
+    public void setAmenities(Set<PropertyAmenityJpaEntity> amenities) { this.amenities = amenities; }
+    public Set<PropertyNearbyPlaceJpaEntity> getNearbyPlaces() { return nearbyPlaces; }
+    public void setNearbyPlaces(Set<PropertyNearbyPlaceJpaEntity> nearbyPlaces) { this.nearbyPlaces = nearbyPlaces; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
