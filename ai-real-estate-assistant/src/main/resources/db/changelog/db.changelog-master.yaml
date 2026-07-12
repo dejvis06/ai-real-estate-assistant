@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/001-create-faq-table.yaml
   - include:
       file: db/changelog/002-faq-initial-data.yaml
+  - include:
+      file: db/changelog/003-spring-ai-schema.yaml

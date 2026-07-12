@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-spring-ai-schema
+      author: ai-real-estate-assistant
+      changes:
+        - sql:
+            sql: |
+              CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+              CREATE TABLE IF NOT EXISTS vector_store (
+                  id        uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+                  content   text,
+                  metadata  json,
+                  embedding vector(1536)
+              );
+
+              CREATE INDEX IF NOT EXISTS spring_ai_vector_index
+                  ON vector_store USING hnsw (embedding vector_cosine_ops);
+
+              CREATE TABLE IF NOT EXISTS SPRING_AI_CHAT_MEMORY (
+                  conversation_id VARCHAR(36)  NOT NULL,
+                  content         TEXT         NOT NULL,
+                  type            VARCHAR(10)  NOT NULL CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')),
+                  "timestamp"     TIMESTAMP    NOT NULL,
+                  sequence_id     BIGINT       NOT NULL
+              );
+
+              CREATE INDEX IF NOT EXISTS SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_TIMESTAMP_IDX
+                  ON SPRING_AI_CHAT_MEMORY (conversation_id, "timestamp");
+
+              CREATE INDEX IF NOT EXISTS SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_SEQUENCE_ID_IDX
+                  ON SPRING_AI_CHAT_MEMORY (conversation_id, sequence_id);
