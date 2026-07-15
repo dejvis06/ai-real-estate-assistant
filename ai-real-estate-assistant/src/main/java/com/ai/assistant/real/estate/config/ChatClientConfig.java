@@ -1,5 +1,6 @@
 package com.ai.assistant.real.estate.config;
 
+import io.modelcontextprotocol.client.McpAsyncClient;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -20,6 +21,9 @@ import java.util.List;
 
 @Configuration
 class ChatClientConfig {
+
+    private static final String PROPERTY_SERVICE_NAME  = "property-service";
+    private static final String RESERVATION_SERVICE_NAME = "reservation-service";
 
     // -------------------------------------------------------------------------
     // System prompts
@@ -206,20 +210,20 @@ class ChatClientConfig {
     @Qualifier("propertyAgent")
     ChatClient propertyAgent(OpenAiChatModel chatModel,
                              ChatMemory chatMemory,
-                             AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider) {
+                             List<McpAsyncClient> mcpAsyncClients) {
 
-        var propertyTools = asyncMcpToolCallbackProvider.getToolCallbacks()
-                .stream()
-                .filter(t -> t.getToolDefinition().name().equals("searchProperties")
-                          || t.getToolDefinition().name().equals("getPropertyByReferenceCode"))
+        List<McpAsyncClient> propertyClients = mcpAsyncClients.stream()
+                .filter(c -> PROPERTY_SERVICE_NAME.equals(c.getServerInfo().name()))
                 .toList();
+
+        var toolCallbackProvider = new AsyncMcpToolCallbackProvider(propertyClients);
 
         return ChatClient.builder(chatModel)
                 .defaultSystem(PROPERTY_SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                 )
-                .defaultTools(propertyTools.toArray(Object[]::new))
+                .defaultTools(toolCallbackProvider)
                 .build();
     }
 
@@ -227,19 +231,20 @@ class ChatClientConfig {
     @Qualifier("reservationAgent")
     ChatClient reservationAgent(OpenAiChatModel chatModel,
                                 ChatMemory chatMemory,
-                                AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider) {
+                                List<McpAsyncClient> mcpAsyncClients) {
 
-        var reservationTools = asyncMcpToolCallbackProvider.getToolCallbacks()
-                .stream()
-                .filter(t -> t.getToolDefinition().name().equals("getReservation"))
+        List<McpAsyncClient> reservationClients = mcpAsyncClients.stream()
+                .filter(c -> RESERVATION_SERVICE_NAME.equals(c.getServerInfo().name()))
                 .toList();
+
+        var toolCallbackProvider = new AsyncMcpToolCallbackProvider(reservationClients);
 
         return ChatClient.builder(chatModel)
                 .defaultSystem(RESERVATION_SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build()
                 )
-                .defaultTools(reservationTools.toArray(Object[]::new))
+                .defaultTools(toolCallbackProvider)
                 .build();
     }
 }
