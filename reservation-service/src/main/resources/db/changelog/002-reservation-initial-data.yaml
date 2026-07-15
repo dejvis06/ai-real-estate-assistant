@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-reservation-initial-data
+      author: reservation-service
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO reservation (reservation_number, status, property_id, customer_name, customer_email,
+                                       customer_phone, viewing_date_time, duration_minutes, agent_notes,
+                                       customer_message, internal_notes, created_at, updated_at)
+              VALUES
+              ('RES-2026-1001',
+               'CONFIRMED',
+               1,
+               'John Smith',
+               'john.smith@example.com',
+               '+355 69 123 4567',
+               NOW() + INTERVAL '3 days',
+               60,
+               'Meet at the main entrance. Key fob required for elevator.',
+               'I am interested in purchasing this apartment. Please confirm the viewing.',
+               null,
+               NOW(), NOW()),
+
+              ('RES-2026-1002',
+               'PENDING',
+               2,
+               'Maria Rossi',
+               'maria.rossi@example.com',
+               '+39 347 987 6543',
+               NOW() + INTERVAL '7 days',
+               90,
+               null,
+               'Looking for a summer rental. Would prefer a morning slot.',
+               null,
+               NOW(), NOW()),
+
+              ('RES-2026-1003',
+               'CANCELLED',
+               3,
+               'James Thornton',
+               'j.thornton@example.com',
+               '+44 7700 900123',
+               NOW() - INTERVAL '2 days',
+               45,
+               null,
+               'Interested in the office space for our team.',
+               'Customer cancelled — rescheduling requested via email.',
+               NOW() - INTERVAL '5 days', NOW() - INTERVAL '3 days');

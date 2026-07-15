@@ -4,6 +4,7 @@ set -e
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE ai_assistant_db;
     CREATE DATABASE property_db;
+    CREATE DATABASE reservation_db;
 EOSQL
 
 # Enable pgvector extension in ai_assistant_db (required for RAG/PGvector)

@@ -345,6 +345,7 @@ Example:
       └─ Controller.java
 ```
 
+
 ## Domain Layer
 
 The domain layer represents the business model.
@@ -449,3 +450,407 @@ The domain layer should have no dependency on any outer layer.
 - Keep controllers thin.
 - Follow SOLID principles.
 - Generate production-ready code.
+
+# Agent Refactor Guide
+
+Refactor the Real Estate AI Assistant into three specialized AI agents.
+
+Each agent must receive only the context, MCP tools, and responsibilities required for its domain. The goal is to minimize prompt size, reduce unnecessary tool access, and improve response quality.
+
+---
+
+## Specialized Agents
+
+Create the following agents:
+
+- `FaqAgent`
+- `PropertyAgent`
+- `ReservationAgent`
+
+Each agent should have its own `ChatClient` configured independently.
+
+---
+
+## MCP Configuration
+
+Use **asynchronous MCP clients** throughout the application.
+
+```java
+McpAsyncClient
+```
+
+Use the asynchronous Spring AI callback provider:
+
+```java
+AsyncMcpToolCallbackProvider
+```
+
+Spring AI supports synchronous and asynchronous MCP clients, but **all configured MCP clients must use the same type**.
+
+Configure the application explicitly as:
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        type: ASYNC
+```
+
+---
+
+## Agent Responsibilities
+
+### FAQ Agent
+
+Responsible only for company knowledge.
+
+It answers questions using the Vector Store (RAG).
+
+Examples:
+
+- Company information
+- Buying process
+- Selling process
+- Financing information
+- Frequently asked questions
+- General guidance
+
+This agent **must not** perform:
+
+- Property searches
+- Reservation lookups
+- Live business operations
+
+It should have access only to:
+
+- RAG Advisor / Vector Store
+
+No MCP tools should be configured for this agent.
+
+---
+
+### Property Agent
+
+Responsible only for live property operations.
+
+Examples:
+
+- Search properties
+- Retrieve property details
+- Compare properties
+- List amenities
+- Nearby places
+- Availability
+- Pricing
+
+It should have access only to:
+
+- Property MCP tools
+
+It must not answer reservation questions.
+
+---
+
+### Reservation Agent
+
+Responsible only for reservation operations.
+
+Examples:
+
+- Reservation details
+- Reservation status
+- Viewing schedule
+- Cancellation
+- Rescheduling
+- Reservation policies
+
+It should have access only to:
+
+- Reservation MCP tools
+
+It must not answer property search questions.
+
+---
+
+### System Prompts
+
+Generate focused system prompts for:
+
+- `FaqAgent`
+- `PropertyAgent`
+- `ReservationAgent`
+
+The prompts must be based on:
+
+- Available MCP tools
+- Responsibility boundaries
+- Supported operations
+
+Each prompt must explicitly prevent the agent from performing work outside its domain.
+
+---
+
+### MCP Client Configuration
+
+Replace the deprecated SSE configuration:
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        sse:
+          connections:
+            property-service:
+              url: ${MCP_PROPERTY_SERVICE_URL:http://localhost:8081}
+```
+
+with asynchronous Streamable HTTP connections:
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        type: ASYNC
+        streamable-http:
+          connections:
+            property-service:
+              url: ${MCP_PROPERTY_SERVICE_URL:http://localhost:8081}
+
+            reservation-service:
+              url: ${MCP_RESERVATION_SERVICE_URL:http://localhost:8082}
+```
+
+---
+
+### ChatService Routing
+
+Inspect the existing `ChatService` and its routing logic.
+
+Refactor it so that `ChatService` delegates requests to the appropriate specialized agent.
+
+The routing logic should remain inside (or be coordinated by) `ChatService`.
+
+The intended flow is:
+
+```text
+ChatController
+      │
+      ▼
+ChatService
+      │
+      ├── FAQ request ─────────► FaqAgent
+      │
+      ├── Property request ────► PropertyAgent
+      │
+      └── Reservation request ─► ReservationAgent
+```
+
+---
+
+### Final Architecture
+
+```text
+                         ┌───────────────────┐
+User request ──────────► │    ChatService    │
+                         │      routing      │
+                         └─────────┬─────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              │                    │                    │
+              ▼                    ▼                    ▼
+       ┌────────────┐       ┌───────────────┐    ┌──────────────────┐
+       │  FAQ Agent │       │ Property Agent│    │ Reservation Agent│
+       └─────┬──────┘       └───────┬───────┘    └────────┬─────────┘
+             │                      │                     │
+             ▼                      ▼                     ▼
+       RAG Advisor         Property MCP Tools     Reservation MCP Tools
+```
+
+This separation ensures:
+
+- **FAQ Agent**
+    - Company knowledge through RAG.
+
+- **Property Agent**
+    - Live property operations through the Property MCP Server.
+
+- **Reservation Agent**
+    - Live reservation operations through the Reservation MCP Server.
+
+Each model receives a smaller, more relevant context, while MCP tool access is constrained by the `ChatClient` configuration rather than relying solely on prompt instructions.
+
+---
+
+# Reservation Service Guide
+
+The Reservation Service is responsible for managing property viewing reservations.
+
+It exposes:
+
+- REST APIs for reservation management.
+- An MCP Server exposing reservation tools for the AI Assistant.
+
+The service should include:
+
+- Spring Boot
+- Jetty Web Server
+- Spring AI MCP Server
+- Spring Data JPA
+- PostgreSQL
+- Liquibase (schema + initial data)
+- Logging
+- Dockerfile
+- Docker Compose integration
+
+---
+
+### REST API
+
+```text
+POST /api/reservations
+GET  /api/reservations/{id}
+PUT  /api/reservations/{id}
+```
+
+No DELETE endpoint should exist.
+
+Reservations are never physically removed.
+
+Cancellation is represented by the reservation status.
+
+---
+
+### Domain Model
+
+A reservation references a property managed by the Property Service.
+
+Reuse (in the sense create the same structure/class) the existing Property Service response DTO:
+
+```java
+import ...property.application.dto.PropertyResponse;
+```
+
+The reservation details response should resemble:
+
+```java
+public record ReservationDetailsResponse(
+
+        Long id,
+
+        String reservationNumber,
+
+        ReservationStatus status,
+
+        PropertyResponse property,
+
+        ReservationScheduleResponse schedule,
+
+        ReservationPolicyResponse policy,
+
+        String customerMessage,
+
+        String internalNotes,
+
+        LocalDateTime createdAt,
+
+        LocalDateTime updatedAt
+) {
+}
+```
+
+
+#### Reservation Policy
+
+Business rules must be evaluated by the Reservation Service.
+
+Clients and AI consumers must never calculate whether an action is allowed.
+
+Instead, expose an evaluated policy.
+
+```java
+public record ReservationPolicyResponse(
+
+        boolean canCancel,
+
+        boolean canReschedule,
+
+        LocalDateTime cancellationDeadline,
+
+        CancellationFeeResponse cancellationFee,
+
+        List<String> restrictions
+) {
+}
+```
+
+---
+
+#### Cancellation Fee
+
+```java
+public record CancellationFeeResponse(
+
+        boolean applicable,
+
+        BigDecimal amount,
+
+        String currency,
+
+        String reason
+) {
+}
+```
+
+So therefore the domain models must reflect these response structures.
+
+### MCP Tool
+
+Expose an MCP tool for retrieving reservation details.
+
+```java
+@Tool(description = """
+Retrieves reservation details by reservation ID.
+Use this when the customer asks about an existing viewing reservation.
+""")
+public ReservationDetailsResponse getReservation(Long reservationId) {
+    ...
+}
+```
+
+The returned response should include:
+
+- Reservation information
+- Property information (`PropertyResponse` from the Property Service)
+- Customer information
+- Viewing schedule
+- Evaluated reservation policies
+
+This enables the AI Assistant to answer questions such as:
+
+- Can I cancel my reservation?
+- Will I be charged if I cancel?
+- Can I reschedule?
+- Why can't I modify my reservation?
+- When is my viewing scheduled?
+
+
+### Property Service Integration
+
+The Reservation Service must retrieve property information from the Property Service through REST.
+
+Expose the following endpoint in the Property Service:
+
+```text
+GET /api/properties/{id}
+```
+
+The endpoint should return:
+
+```java
+PropertyResponse
+```
+
+The Reservation Service should call this endpoint whenever reservation details require property information, embedding the returned `PropertyResponse` inside `ReservationDetailsResponse`.

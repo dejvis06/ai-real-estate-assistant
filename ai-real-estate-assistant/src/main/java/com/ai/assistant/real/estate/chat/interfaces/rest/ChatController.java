@@ -21,6 +21,6 @@ public class ChatController {
             @RequestBody ChatRequest request,
             @RequestHeader(value = "X-Conversation-Id", defaultValue = "default") String conversationId) {
 
-        return ResponseEntity.ok(chatService.chat(request.message(), conversationId));
+        return ResponseEntity.ok(chatService.chat(request.message(), request.agentType(), conversationId));
     }
 }

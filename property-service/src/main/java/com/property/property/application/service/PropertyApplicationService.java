@@ -2,6 +2,7 @@ package com.property.property.application.service;
 
 import com.property.property.application.dto.PropertyResponse;
 import com.property.property.domain.model.ListingType;
+import com.property.property.domain.model.PropertyId;
 import com.property.property.domain.model.PropertySearchCriteria;
 import com.property.property.domain.model.PropertyType;
 import com.property.property.domain.repository.PropertyRepository;
@@ -24,6 +25,13 @@ public class PropertyApplicationService {
 
     public PropertyApplicationService(PropertyRepository propertyRepository) {
         this.propertyRepository = propertyRepository;
+    }
+
+    public Optional<PropertyResponse> getPropertyById(Long id) {
+        var result = propertyRepository.findById(new PropertyId(id))
+                .map(PropertyResponse::from);
+        log.info("getPropertyById [{}]: {}", id, result.isPresent() ? "found" : "not found");
+        return result;
     }
 
     public List<PropertyResponse> searchProperties(String city, String propertyType, String listingType,

@@ -1,0 +1,38 @@
+spring:
+  application.name: reservation-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reservation_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  ai:
+    mcp:
+      server:
+        name: reservation-service
+        version: 0.0.1-SNAPSHOT
+
+clients:
+  property-service:
+    url: ${PROPERTY_SERVICE_URL:http://localhost:8081}
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.reservation: INFO
+    org.springframework.ai: DEBUG

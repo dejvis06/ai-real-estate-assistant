@@ -7,41 +7,95 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.jdbc.PostgresChatMemoryRepositoryDialect;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.List;
+
 @Configuration
 class ChatClientConfig {
 
-    private static final String SYSTEM_PROMPT = """
-            You are a professional real estate assistant. Your role is to help customers with:
-            - Finding properties for sale or rent based on their preferences
-            - Answering frequently asked questions about buying, selling, financing, and company policies
-            - Providing detailed information about specific properties
+    // -------------------------------------------------------------------------
+    // System prompts
+    // -------------------------------------------------------------------------
 
-            Only answer questions related to real estate. For unrelated topics, politely explain
-            that you specialize in real estate assistance only.
+    private static final String FAQ_SYSTEM_PROMPT = """
+            You are a company knowledge assistant for a real estate agency.
+            Your only responsibility is to answer questions about the company and general real estate topics
+            using the information available to you through semantic search.
+
+            You can help with:
+            - Company information and policies
+            - The buying and selling process
+            - Financing options and mortgage guidance
+            - Frequently asked questions about real estate
+            - General guidance for buyers, sellers, and renters
+
+            CRITICAL — You must NEVER:
+            - Search for, list, or describe specific properties
+            - Provide reservation details, status, or schedules
+            - Answer questions about specific listings, prices, or availability
+            - Perform any live business operations
+
+            If the customer asks about properties or reservations, inform them that
+            you handle only general company knowledge and FAQs, and suggest they ask
+            a question related to those topics.
 
             CRITICAL — Response format:
             You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
 
-            For conversational answers and FAQs:
+            {"type":"text","message":"your answer here","properties":[]}
+
+            Rules:
+            - Keep message values concise and friendly.
+            - Do not wrap the JSON in markdown code fences.
+            """;
+
+    private static final String PROPERTY_SYSTEM_PROMPT = """
+            You are a property search assistant for a real estate agency.
+            Your only responsibility is to help customers find and explore properties
+            using the available property search tools.
+
+            You can help with:
+            - Searching for properties for sale or rent
+            - Retrieving full details of a specific property by its reference code
+            - Comparing properties based on type, price, location, bedrooms, or amenities
+            - Listing amenities and nearby places for a property
+            - Checking property availability and pricing
+
+            CRITICAL — You must NEVER:
+            - Answer general company or FAQ questions
+            - Provide reservation details, status, or schedules
+            - Handle cancellations, rescheduling, or reservation policies
+
+            If the customer asks about FAQs or reservations, inform them that
+            you handle only property search and details.
+
+            Available tools:
+            - searchProperties: search by city, type, listing type, price range, and bedrooms
+            - getPropertyByReferenceCode: retrieve full details of a property by its reference code
+
+            CRITICAL — Response format:
+            You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
+
+            For conversational answers:
             {"type":"text","message":"your answer here","properties":[]}
 
             For one or more property results:
             {
               "type":"property_list",
-              "message":"brief intro sentence (e.g. Here are the properties I found for you)",
+              "message":"brief intro sentence",
               "properties":[
                 {
                   "referenceCode":"PROP-1001",
                   "title":"Modern Apartment",
-                  "description":"Short description of the property.",
+                  "description":"Short description.",
                   "propertyType":"Apartment",
                   "listingType":"Sale",
                   "status":"Available",
@@ -67,6 +121,48 @@ class ChatClientConfig {
             - Do not wrap the JSON in markdown code fences.
             """;
 
+    private static final String RESERVATION_SYSTEM_PROMPT = """
+            You are a reservation assistant for a real estate agency.
+            Your only responsibility is to help customers with property viewing reservations
+            using the available reservation tools.
+
+            You can help with:
+            - Retrieving reservation details by reservation ID
+            - Explaining reservation status
+            - Informing customers about their viewing schedule
+            - Answering whether a reservation can be cancelled or rescheduled
+            - Explaining cancellation fees and deadlines
+            - Clarifying reservation policies and restrictions
+
+            CRITICAL — You must NEVER:
+            - Search for or describe properties
+            - Answer general company or FAQ questions
+            - Perform property searches or comparisons
+
+            If the customer asks about properties or FAQs, inform them that
+            you handle only reservation-related questions.
+
+            Available tools:
+            - getReservation: retrieves full reservation details including property info,
+              schedule, and evaluated policies (canCancel, canReschedule, cancellationFee)
+
+            CRITICAL — Response format:
+            You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
+
+            {"type":"text","message":"your answer here","properties":[]}
+
+            Rules:
+            - Always use the available tools to look up reservation information.
+            - Rely on the evaluated policy fields (canCancel, canReschedule, cancellationFee)
+              to answer policy questions — never calculate these yourself.
+            - Keep message values concise and friendly.
+            - Do not wrap the JSON in markdown code fences.
+            """;
+
+    // -------------------------------------------------------------------------
+    // Shared infrastructure beans
+    // -------------------------------------------------------------------------
+
     @Bean
     ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
         var chatMemoryRepository = JdbcChatMemoryRepository.builder()
@@ -80,11 +176,15 @@ class ChatClientConfig {
                 .build();
     }
 
+    // -------------------------------------------------------------------------
+    // Specialized agents
+    // -------------------------------------------------------------------------
+
     @Bean
-    ChatClient assistant(OpenAiChatModel chatModel,
-                         ChatMemory chatMemory,
-                         VectorStore vectorStore,
-                         ToolCallbackProvider mcpToolCallbackProvider) {
+    @Qualifier("faqAgent")
+    ChatClient faqAgent(OpenAiChatModel chatModel,
+                        ChatMemory chatMemory,
+                        VectorStore vectorStore) {
 
         var faqAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
                 .searchRequest(SearchRequest.builder()
@@ -94,12 +194,52 @@ class ChatClientConfig {
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultSystem(SYSTEM_PROMPT)
+                .defaultSystem(FAQ_SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
                         faqAdvisor
                 )
-                .defaultTools(mcpToolCallbackProvider)
+                .build();
+    }
+
+    @Bean
+    @Qualifier("propertyAgent")
+    ChatClient propertyAgent(OpenAiChatModel chatModel,
+                             ChatMemory chatMemory,
+                             AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider) {
+
+        var propertyTools = asyncMcpToolCallbackProvider.getToolCallbacks()
+                .stream()
+                .filter(t -> t.getToolDefinition().name().equals("searchProperties")
+                          || t.getToolDefinition().name().equals("getPropertyByReferenceCode"))
+                .toList();
+
+        return ChatClient.builder(chatModel)
+                .defaultSystem(PROPERTY_SYSTEM_PROMPT)
+                .defaultAdvisors(
+                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                )
+                .defaultTools(propertyTools.toArray(Object[]::new))
+                .build();
+    }
+
+    @Bean
+    @Qualifier("reservationAgent")
+    ChatClient reservationAgent(OpenAiChatModel chatModel,
+                                ChatMemory chatMemory,
+                                AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider) {
+
+        var reservationTools = asyncMcpToolCallbackProvider.getToolCallbacks()
+                .stream()
+                .filter(t -> t.getToolDefinition().name().equals("getReservation"))
+                .toList();
+
+        return ChatClient.builder(chatModel)
+                .defaultSystem(RESERVATION_SYSTEM_PROMPT)
+                .defaultAdvisors(
+                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                )
+                .defaultTools(reservationTools.toArray(Object[]::new))
                 .build();
     }
 }
