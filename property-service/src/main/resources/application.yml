@@ -15,7 +15,6 @@ spring:
       server:
         name: property-service
         version: 0.0.1-SNAPSHOT
-        sse-message-endpoint: /sse/message
 
 server:
   port: 8081
