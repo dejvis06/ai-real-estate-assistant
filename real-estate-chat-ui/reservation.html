@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservation Assistant</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">📅</span>
+          <div>
+            <div class="logo-title">Reservation Assistant</div>
+            <div class="logo-sub">Powered by Spring AI · MCP</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section-label">Try asking about…</div>
+      <ul class="suggestions">
+        <li class="suggestion-item" data-query="What is the status of my reservation?">
+          <span class="suggestion-icon">📋</span>
+          <span>My reservation<br><strong>status</strong></span>
+        </li>
+        <li class="suggestion-item" data-query="Can I cancel my reservation?">
+          <span class="suggestion-icon">❌</span>
+          <span>Can I<br><strong>cancel my reservation?</strong></span>
+        </li>
+        <li class="suggestion-item" data-query="When is my viewing scheduled?">
+          <span class="suggestion-icon">🕐</span>
+          <span>When is my<br><strong>viewing scheduled?</strong></span>
+        </li>
+        <li class="suggestion-item" data-query="Can I reschedule my viewing?">
+          <span class="suggestion-icon">🔄</span>
+          <span>Can I<br><strong>reschedule my viewing?</strong></span>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <button class="new-chat-btn" id="newChatBtn">+ New Conversation</button>
+        <a href="index.html" class="back-link">← Back to assistants</a>
+      </div>
+    </aside>
+
+    <main class="chat-area">
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-state" id="welcomeState">
+          <div class="welcome-icon">📅</div>
+          <h2>How can I help you with your reservation?</h2>
+          <p>Ask me about your viewing schedule, cancellation policies, or reservation status.</p>
+        </div>
+      </div>
+
+      <div class="chat-input-wrapper">
+        <form class="chat-form" id="chatForm">
+          <input type="text" id="messageInput" class="chat-input" placeholder="Ask about your reservation…" autocomplete="off" />
+          <button type="submit" class="send-btn" id="sendBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    window.AGENT_CONFIG = { agentType: 'RESERVATION', reservationId: 1 };
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>

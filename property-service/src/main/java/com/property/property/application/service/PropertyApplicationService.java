@@ -1,17 +1,15 @@
 package com.property.property.application.service;
 
 import com.property.property.application.dto.PropertyResponse;
-import com.property.property.domain.model.ListingType;
 import com.property.property.domain.model.PropertyId;
 import com.property.property.domain.model.PropertySearchCriteria;
-import com.property.property.domain.model.PropertyType;
+import com.property.property.domain.model.PropertySearchParams;
 import com.property.property.domain.repository.PropertyRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,20 +32,11 @@ public class PropertyApplicationService {
         return result;
     }
 
-    public List<PropertyResponse> searchProperties(String city, String propertyType, String listingType,
-                                                   BigDecimal minPrice, BigDecimal maxPrice, Integer minBedrooms) {
-        var criteria = new PropertySearchCriteria(
-                city,
-                propertyType != null ? PropertyType.valueOf(propertyType.toUpperCase()) : null,
-                listingType != null ? ListingType.valueOf(listingType.toUpperCase()) : null,
-                minPrice,
-                maxPrice,
-                minBedrooms
-        );
-        var results = propertyRepository.findByCriteria(criteria).stream()
+    public List<PropertyResponse> searchProperties(PropertySearchParams params) {
+        var results = propertyRepository.search(PropertySearchCriteria.from(params)).stream()
                 .map(PropertyResponse::from)
                 .toList();
-        log.info("searchProperties found {} result(s) for criteria: {}", results.size(), criteria);
+        log.info("searchProperties found {} result(s) for params: {}", results.size(), params);
         return results;
     }
 

@@ -13,5 +13,5 @@ public interface PropertyRepository {
 
     Optional<Property> findByReferenceCode(String referenceCode);
 
-    List<Property> findByCriteria(PropertySearchCriteria criteria);
+    List<Property> search(PropertySearchCriteria criteria);
 }

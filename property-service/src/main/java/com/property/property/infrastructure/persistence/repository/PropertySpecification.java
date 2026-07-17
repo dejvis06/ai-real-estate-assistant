@@ -13,32 +13,66 @@ public class PropertySpecification {
 
     private PropertySpecification() {}
 
-    public static Specification<PropertyJpaEntity> byCriteria(PropertySearchCriteria criteria) {
+    public static Specification<PropertyJpaEntity> byCriteria(PropertySearchCriteria c) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(cb.equal(root.get("status"), PropertyStatus.AVAILABLE));
+            predicates.add(cb.equal(root.get("status"),
+                    c.status() != null ? c.status() : PropertyStatus.AVAILABLE));
 
-            if (criteria.city() != null && !criteria.city().isBlank()) {
-                predicates.add(cb.like(
-                        cb.lower(root.get("city")),
-                        "%" + criteria.city().toLowerCase() + "%"
-                ));
+            if (c.title() != null && !c.title().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("title")), "%" + c.title().toLowerCase() + "%"));
             }
-            if (criteria.propertyType() != null) {
-                predicates.add(cb.equal(root.get("propertyType"), criteria.propertyType()));
+            if (c.description() != null && !c.description().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("description")), "%" + c.description().toLowerCase() + "%"));
             }
-            if (criteria.listingType() != null) {
-                predicates.add(cb.equal(root.get("listingType"), criteria.listingType()));
+            if (c.propertyType() != null) {
+                predicates.add(cb.equal(root.get("propertyType"), c.propertyType()));
             }
-            if (criteria.minPrice() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), criteria.minPrice()));
+            if (c.listingType() != null) {
+                predicates.add(cb.equal(root.get("listingType"), c.listingType()));
             }
-            if (criteria.maxPrice() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("price"), criteria.maxPrice()));
+            if (c.city() != null && !c.city().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("city")), "%" + c.city().toLowerCase() + "%"));
             }
-            if (criteria.minBedrooms() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("bedrooms"), criteria.minBedrooms()));
+            if (c.country() != null && !c.country().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("country")), "%" + c.country().toLowerCase() + "%"));
+            }
+            if (c.minPrice() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), c.minPrice()));
+            }
+            if (c.maxPrice() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("price"), c.maxPrice()));
+            }
+            if (c.minBedrooms() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("bedrooms"), c.minBedrooms()));
+            }
+            if (c.maxBedrooms() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("bedrooms"), c.maxBedrooms()));
+            }
+            if (c.minBathrooms() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("bathrooms"), c.minBathrooms()));
+            }
+            if (c.maxBathrooms() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("bathrooms"), c.maxBathrooms()));
+            }
+            if (c.minArea() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("area"), c.minArea()));
+            }
+            if (c.maxArea() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("area"), c.maxArea()));
+            }
+            if (c.minFloor() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("floor"), c.minFloor()));
+            }
+            if (c.maxFloor() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("floor"), c.maxFloor()));
+            }
+            if (c.minYearBuilt() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("yearBuilt"), c.minYearBuilt()));
+            }
+            if (c.maxYearBuilt() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("yearBuilt"), c.maxYearBuilt()));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

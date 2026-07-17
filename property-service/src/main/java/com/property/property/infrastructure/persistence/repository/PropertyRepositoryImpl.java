@@ -4,6 +4,7 @@ import com.property.property.domain.model.Property;
 import com.property.property.domain.model.PropertyId;
 import com.property.property.domain.model.PropertySearchCriteria;
 import com.property.property.domain.repository.PropertyRepository;
+import com.property.property.infrastructure.persistence.entity.PropertyJpaEntity;
 import com.property.property.infrastructure.persistence.mapper.PropertyMapper;
 import org.springframework.stereotype.Repository;
 
@@ -34,10 +35,10 @@ public class PropertyRepositoryImpl implements PropertyRepository {
     }
 
     @Override
-    public List<Property> findByCriteria(PropertySearchCriteria criteria) {
-        var spec = PropertySpecification.byCriteria(criteria);
-        var matchingIds = propertyJpaRepository.findAll(spec).stream()
-                .map(e -> e.getId())
+    public List<Property> search(PropertySearchCriteria criteria) {
+        var matchingIds = propertyJpaRepository.findAll(PropertySpecification.byCriteria(criteria))
+                .stream()
+                .map(PropertyJpaEntity::getId)
                 .toList();
 
         if (matchingIds.isEmpty()) {

@@ -1,14 +1,42 @@
 const API_URL = 'http://localhost:8080/api/chat';
 
+// Agent config injected per page
+const AGENT_TYPE    = window.AGENT_CONFIG?.agentType   || 'PROPERTY';
+const RESERVATION_ID = window.AGENT_CONFIG?.reservationId || null;
+
 // Unique conversation ID per browser session
 const conversationId = 'session-' + Date.now();
 
 // DOM refs
-const form         = document.getElementById('chatForm');
-const input        = document.getElementById('messageInput');
-const sendBtn      = document.getElementById('sendBtn');
-const messagesEl   = document.getElementById('chatMessages');
-const newChatBtn   = document.getElementById('newChatBtn');
+const form       = document.getElementById('chatForm');
+const input      = document.getElementById('messageInput');
+const sendBtn    = document.getElementById('sendBtn');
+const messagesEl = document.getElementById('chatMessages');
+const newChatBtn = document.getElementById('newChatBtn');
+
+// ── Welcome state content per agent ──────────────────────
+
+const WELCOME = {
+  PROPERTY: {
+    icon: '🏡',
+    heading: 'How can I help you find your perfect home?',
+    body: 'Ask me about available properties, prices, locations, or schedule a viewing.',
+  },
+  RESERVATION: {
+    icon: '📅',
+    heading: 'How can I help you with your reservation?',
+    body: 'Ask me about your viewing schedule, cancellation policies, or reservation status.',
+  },
+  FAQ: {
+    icon: '💬',
+    heading: 'Have a question? I\'m here to help.',
+    body: 'Ask me anything about buying, selling, financing, or our services.',
+  },
+};
+
+function welcomeContent() {
+  return WELCOME[AGENT_TYPE] || WELCOME.PROPERTY;
+}
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -30,6 +58,19 @@ function setLoading(loading) {
   input.disabled   = loading;
 }
 
+function buildWelcomeEl() {
+  const w = welcomeContent();
+  const el = document.createElement('div');
+  el.id = 'welcomeState';
+  el.className = 'welcome-state';
+  el.innerHTML = `
+    <div class="welcome-icon">${w.icon}</div>
+    <h2>${w.heading}</h2>
+    <p>${w.body}</p>
+  `;
+  return el;
+}
+
 // ── Typing indicator ──────────────────────────────────────
 
 function showTyping() {
@@ -38,7 +79,7 @@ function showTyping() {
   wrapper.className = 'message bot';
   wrapper.id = 'typingIndicator';
   wrapper.innerHTML = `
-    <div class="avatar">🏠</div>
+    <div class="avatar">${welcomeContent().icon}</div>
     <div class="bubble">
       <div class="typing-indicator"><span></span><span></span><span></span></div>
     </div>`;
@@ -59,7 +100,7 @@ function appendTextMessage(role, text, isError = false) {
 
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
-  avatar.textContent = role === 'user' ? 'You' : '🏠';
+  avatar.textContent = role === 'user' ? 'You' : welcomeContent().icon;
 
   const col = document.createElement('div');
 
@@ -93,9 +134,9 @@ function buildPropertyCard(p) {
     ? p.imageUrls[0]
     : 'https://placehold.co/320x200/e2e8f0/94a3b8?text=No+Image';
 
-  const bedsHtml   = p.bedrooms  != null ? `<span class="prop-stat">🛏 ${p.bedrooms} Bed${p.bedrooms !== 1 ? 's' : ''}</span>` : '';
-  const bathsHtml  = p.bathrooms != null ? `<span class="prop-stat">🚿 ${p.bathrooms} Bath${p.bathrooms !== 1 ? 's' : ''}</span>` : '';
-  const areaHtml   = p.area      != null ? `<span class="prop-stat">📐 ${p.area} m²</span>` : '';
+  const bedsHtml  = p.bedrooms  != null ? `<span class="prop-stat">🛏 ${p.bedrooms} Bed${p.bedrooms !== 1 ? 's' : ''}</span>` : '';
+  const bathsHtml = p.bathrooms != null ? `<span class="prop-stat">🚿 ${p.bathrooms} Bath${p.bathrooms !== 1 ? 's' : ''}</span>` : '';
+  const areaHtml  = p.area      != null ? `<span class="prop-stat">📐 ${p.area} m²</span>` : '';
   const statusHtml = p.status    ? `<span class="prop-badge prop-badge--${p.status.toLowerCase()}">${p.status}</span>` : '';
   const typeHtml   = p.listingType ? `<span class="prop-badge prop-badge--type">${p.listingType}</span>` : '';
 
@@ -124,13 +165,12 @@ function appendPropertyResponse(data) {
 
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
-  avatar.textContent = '🏠';
+  avatar.textContent = welcomeContent().icon;
 
   const col = document.createElement('div');
   col.style.minWidth = '0';
   col.style.flex = '1';
 
-  // Intro message
   if (data.message) {
     const bubble = document.createElement('div');
     bubble.className = 'bubble';
@@ -138,7 +178,6 @@ function appendPropertyResponse(data) {
     col.appendChild(bubble);
   }
 
-  // Property grid
   if (data.properties && data.properties.length > 0) {
     const grid = document.createElement('div');
     grid.className = 'prop-grid';
@@ -165,13 +204,22 @@ async function sendMessage(userText) {
   showTyping();
 
   try {
+    const body = {
+      message:    userText,
+      agentType:  AGENT_TYPE,
+    };
+
+    if (RESERVATION_ID !== null) {
+      body.reservationId = RESERVATION_ID;
+    }
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Conversation-Id': conversationId,
       },
-      body: JSON.stringify({ message: userText }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -216,14 +264,6 @@ document.querySelectorAll('.suggestion-item').forEach((item) => {
 
 newChatBtn.addEventListener('click', () => {
   messagesEl.innerHTML = '';
-  const welcome = document.createElement('div');
-  welcome.id = 'welcomeState';
-  welcome.className = 'welcome-state';
-  welcome.innerHTML = `
-    <div class="welcome-icon">🏠</div>
-    <h2>How can I help you find your perfect home?</h2>
-    <p>Ask me about available properties, prices, locations, or schedule a viewing.</p>
-  `;
-  messagesEl.appendChild(welcome);
+  messagesEl.appendChild(buildWelcomeEl());
   input.focus();
 });
