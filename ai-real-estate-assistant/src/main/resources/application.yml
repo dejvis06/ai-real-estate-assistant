@@ -1,0 +1,53 @@
+spring:
+  application.name: ai-real-estate-assistant
+  main:
+    web-application-type: servlet
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ai_assistant_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        temperature: 0
+        model: gpt-5.2
+      embedding:
+        model: text-embedding-3-small
+    vectorstore:
+      pgvector:
+        index-type: hnsw
+        initialize-schema: false
+        schema-validation: false
+        schema-name: public
+        table-name: vector_store
+        dimensions: 1536
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: never
+    mcp:
+      client:
+        type: ASYNC
+        streamable-http:
+          connections:
+            property-service:
+              url: ${MCP_PROPERTY_SERVICE_URL:http://localhost:8081}
+            reservation-service:
+              url: ${MCP_RESERVATION_SERVICE_URL:http://localhost:8082}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.ai.assistant.real.estate: INFO
+    org.springframework.ai: DEBUG
+    org.springframework.ai.vectorstore: INFO
