@@ -11,11 +11,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class FaqPGVectorStoreAdapter implements FaqVectorStorePort {
 
     private static final Logger log = LoggerFactory.getLogger(FaqPGVectorStoreAdapter.class);
+
+    private static final String FAQ_UUID_NAMESPACE = "faq-namespace:";
 
     private final VectorStore vectorStore;
 
@@ -65,7 +68,17 @@ public class FaqPGVectorStoreAdapter implements FaqVectorStorePort {
         return new Document(documentId(faq.getId()), content, metadata);
     }
 
+    /**
+     * Derives a stable, deterministic UUID from the FAQ numeric ID.
+     *
+     * <p>The {@code vector_store} table declares its {@code id} column as {@code uuid},
+     * so every document ID passed to Spring AI's PgVectorStore must be a valid UUID.
+     * Using {@link UUID#nameUUIDFromBytes} (UUID v3 / MD5) guarantees that the same
+     * FAQ ID always produces the same UUID, which is required for idempotent
+     * add/update/delete operations.
+     */
     private String documentId(FaqId faqId) {
-        return "faq-" + faqId.value();
+        String name = FAQ_UUID_NAMESPACE + faqId.value();
+        return UUID.nameUUIDFromBytes(name.getBytes()).toString();
     }
 }

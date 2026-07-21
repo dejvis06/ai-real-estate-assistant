@@ -1,7 +1,7 @@
 const API_URL = 'http://localhost:8080/api/chat';
 
 // Agent config injected per page
-const AGENT_TYPE    = window.AGENT_CONFIG?.agentType   || 'PROPERTY';
+const AGENT_TYPE     = window.AGENT_CONFIG?.agentType    || 'PROPERTY';
 const RESERVATION_ID = window.AGENT_CONFIG?.reservationId || null;
 
 // Unique conversation ID per browser session
@@ -35,7 +35,7 @@ const WELCOME = {
 };
 
 function welcomeContent() {
-  return WELCOME[AGENT_TYPE] || WELCOME.PROPERTY;
+  return WELCOME[AGENT_TYPE] || WELCOME.FAQ;
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -91,6 +91,23 @@ function hideTyping() {
   document.getElementById('typingIndicator')?.remove();
 }
 
+// ── Markdown renderer ─────────────────────────────────────
+// Handles the subset AI models realistically produce in chat responses.
+// Raw HTML is escaped first to prevent injection, then Markdown tokens
+// are replaced with their HTML equivalents.
+
+function renderMarkdown(text) {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')           // *italic*
+    .replace(/\n/g,            '<br>');                 // line breaks
+}
+
 // ── Render: plain text bubble ─────────────────────────────
 
 function appendTextMessage(role, text, isError = false) {
@@ -106,7 +123,14 @@ function appendTextMessage(role, text, isError = false) {
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble' + (isError ? ' error' : '');
-  bubble.textContent = text;
+
+  if (role === 'bot' && !isError) {
+    // Bot responses may contain Markdown bold/italic from the AI model
+    bubble.innerHTML = renderMarkdown(text);
+  } else {
+    // User messages and error messages are always plain text
+    bubble.textContent = text;
+  }
 
   const time = document.createElement('div');
   time.className = 'msg-time';
@@ -204,10 +228,7 @@ async function sendMessage(userText) {
   showTyping();
 
   try {
-    const body = {
-      message:    userText,
-      agentType:  AGENT_TYPE,
-    };
+    const body = { message: userText, agentType: AGENT_TYPE };
 
     if (RESERVATION_ID !== null) {
       body.reservationId = RESERVATION_ID;
@@ -224,14 +245,24 @@ async function sendMessage(userText) {
 
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
-    const data = await res.json();
     hideTyping();
 
-    if (data.type === 'property_list' && data.properties && data.properties.length > 0) {
-      appendPropertyResponse(data);
+    // All agents return JSON. The shape differs per agent:
+    //   PROPERTY    → PropertyResponse { type, message, properties[] }
+    //   FAQ         → TextResponse     { message }
+    //   RESERVATION → TextResponse     { message }
+    const data = await res.json();
+
+    if (AGENT_TYPE === 'PROPERTY') {
+      if (data.type === 'property_list' && data.properties && data.properties.length > 0) {
+        appendPropertyResponse(data);
+      } else {
+        appendTextMessage('bot', data.message || 'No response received.');
+      }
     } else {
       appendTextMessage('bot', data.message || 'No response received.');
     }
+
   } catch (err) {
     hideTyping();
     const msg = err.message.includes('Failed to fetch')

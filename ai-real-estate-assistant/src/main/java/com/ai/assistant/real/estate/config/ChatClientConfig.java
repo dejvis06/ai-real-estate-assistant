@@ -22,7 +22,7 @@ import java.util.List;
 @Configuration
 class ChatClientConfig {
 
-    private static final String PROPERTY_SERVICE_NAME  = "property-service";
+    private static final String PROPERTY_SERVICE_NAME    = "property-service";
     private static final String RESERVATION_SERVICE_NAME = "reservation-service";
 
     // -------------------------------------------------------------------------
@@ -30,152 +30,68 @@ class ChatClientConfig {
     // -------------------------------------------------------------------------
 
     private static final String FAQ_SYSTEM_PROMPT = """
-            You are a company knowledge assistant for a real estate agency.
-            Your only responsibility is to answer questions about the company and general real estate topics
-            using the information available to you through semantic search.
-
-            You can help with:
-            - Company information and policies
-            - The buying and selling process
-            - Financing options and mortgage guidance
-            - Frequently asked questions about real estate
-            - General guidance for buyers, sellers, and renters
-
-            CRITICAL — You must NEVER:
-            - Search for, list, or describe specific properties
-            - Provide reservation details, status, or schedules
-            - Answer questions about specific listings, prices, or availability
-            - Perform any live business operations
-
-            If the customer asks about properties or reservations, inform them that
-            you handle only general company knowledge and FAQs, and suggest they ask
-            a question related to those topics.
-
-            CRITICAL — Response format:
-            You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
-
-            {"type":"text","message":"your answer here","properties":[]}
-
-            Rules:
-            - Keep message values concise and friendly.
-            - Do not wrap the JSON in markdown code fences.
+            You are the FAQ Agent for a real estate agency.
+            Answer only using the information retrieved by your RAG tools.
+            If no relevant information is found in the tool response, say you don't know.
+            Never answer from your own knowledge or respond to unrelated topics.
+            Reply in plain, natural language — never output JSON.
             """;
 
     private static final String PROPERTY_SYSTEM_PROMPT = """
-            You are a property search assistant for a real estate agency.
-            Your only responsibility is to help customers find and explore properties
-            using the available property search tools.
+            You are the Property Agent for a real estate agency.
+            Answer only through your property MCP tools.
+            Only present data returned by the tools. Never answer from your own knowledge or respond to unrelated topics.
 
-            You can help with:
-            - Searching for properties for sale or rent
-            - Retrieving full details of a specific property by its reference code
-            - Comparing properties based on type, price, location, bedrooms, or amenities
-            - Listing amenities and nearby places for a property
-            - Checking property availability and pricing
+            Always reply with a single JSON object — no text outside it, no markdown fences.
 
-            CRITICAL — You must NEVER:
-            - Answer general company or FAQ questions
-            - Provide reservation details, status, or schedules
-            - Handle cancellations, rescheduling, or reservation policies
-
-            If the customer asks about FAQs or reservations, inform them that
-            you handle only property search and details.
-
-            Available tools:
-            - searchProperties: search by city, type, listing type, price range, and bedrooms
-            - getPropertyByReferenceCode: retrieve full details of a property by its reference code
-
-            CRITICAL — Response format:
-            You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
-
-            For conversational answers:
+            Conversational reply:
             {"type":"text","message":"your answer here","properties":[]}
 
-            For one or more property results:
-            {
-              "type":"property_list",
-              "message":"brief intro sentence",
-              "properties":[
-                {
-                  "referenceCode":"PROP-1001",
-                  "title":"Modern Apartment",
-                  "description":"Short description.",
-                  "propertyType":"Apartment",
-                  "listingType":"Sale",
-                  "status":"Available",
-                  "price":185000.0,
-                  "currency":"EUR",
-                  "bedrooms":2,
-                  "bathrooms":1,
-                  "area":85.0,
-                  "city":"Tirana Center",
-                  "country":"Albania",
-                  "address":"Street address here",
-                  "imageUrls":["https://images.example.com/prop-1001/main.jpg"],
-                  "amenities":["Pool","Gym"]
-                }
-              ]
-            }
-
-            Rules:
-            - Always use the available tools to search property listings when the customer asks about properties.
-            - Never embed property details inside the message text; always use the properties array.
-            - If the customer's criteria are vague, ask clarifying questions using the text type.
-            - Keep message values concise and friendly.
-            - Do not wrap the JSON in markdown code fences.
+            Property results (use for any property returned by a tool):
+            {"type":"property_list","message":"brief intro","properties":[{"referenceCode":"","title":"","description":"","propertyType":"","listingType":"","status":"","price":0,"currency":"","bedrooms":0,"bathrooms":0,"area":0,"city":"","country":"","address":"","imageUrls":[],"amenities":[]}]}
             """;
 
     private static final String RESERVATION_SYSTEM_PROMPT = """
-            You are a reservation assistant for a real estate agency.
-            Your only responsibility is to help customers with property viewing reservations
-            using the available reservation tools.
-
-            You can help with:
-            - Retrieving reservation details by reservation ID
-            - Explaining reservation status
-            - Informing customers about their viewing schedule
-            - Answering whether a reservation can be cancelled or rescheduled
-            - Explaining cancellation fees and deadlines
-            - Clarifying reservation policies and restrictions
-
-            CRITICAL — You must NEVER:
-            - Search for or describe properties
-            - Answer general company or FAQ questions
-            - Perform property searches or comparisons
-
-            If the customer asks about properties or FAQs, inform them that
-            you handle only reservation-related questions.
-
-            Available tools:
-            - getReservation: retrieves full reservation details including property info,
-              schedule, and evaluated policies (canCancel, canReschedule, cancellationFee)
-
-            CRITICAL — Response format:
-            You MUST always respond with a single valid JSON object. Never output any text outside the JSON.
-
-            {"type":"text","message":"your answer here","properties":[]}
-
-            Rules:
-            - Always use the available tools to look up reservation information.
-            - Rely on the evaluated policy fields (canCancel, canReschedule, cancellationFee)
-              to answer policy questions — never calculate these yourself.
-            - Keep message values concise and friendly.
-            - Do not wrap the JSON in markdown code fences.
+            You are the Reservation Agent for a real estate agency.
+            Answer only through your reservation MCP tools.
+            Only present and answer based on the data returned by the tools.
+            Never answer from your own knowledge or respond to unrelated topics.
+            Reply in plain, natural language — never output JSON.
             """;
 
     // -------------------------------------------------------------------------
-    // Shared infrastructure beans
+    // Per-agent ChatMemory beans
+    // Each agent gets its own ChatMemory so conversation histories are fully
+    // isolated: an FAQ exchange cannot bleed into a property or reservation
+    // exchange, even when the user sends the same conversationId.
     // -------------------------------------------------------------------------
 
     @Bean
-    ChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
-        var chatMemoryRepository = JdbcChatMemoryRepository.builder()
+    @Qualifier("faqChatMemory")
+    ChatMemory faqChatMemory(JdbcTemplate jdbcTemplate) {
+        return buildChatMemory(jdbcTemplate);
+    }
+
+    @Bean
+    @Qualifier("propertyChatMemory")
+    ChatMemory propertyChatMemory(JdbcTemplate jdbcTemplate) {
+        return buildChatMemory(jdbcTemplate);
+    }
+
+    @Bean
+    @Qualifier("reservationChatMemory")
+    ChatMemory reservationChatMemory(JdbcTemplate jdbcTemplate) {
+        return buildChatMemory(jdbcTemplate);
+    }
+
+    private ChatMemory buildChatMemory(JdbcTemplate jdbcTemplate) {
+        var repository = JdbcChatMemoryRepository.builder()
                 .jdbcTemplate(jdbcTemplate)
                 .dialect(new PostgresChatMemoryRepositoryDialect())
                 .build();
 
         return MessageWindowChatMemory.builder()
-                .chatMemoryRepository(chatMemoryRepository)
+                .chatMemoryRepository(repository)
                 .maxMessages(30)
                 .build();
     }
@@ -187,12 +103,17 @@ class ChatClientConfig {
     @Bean
     @Qualifier("faqAgent")
     ChatClient faqAgent(OpenAiChatModel chatModel,
-                        ChatMemory chatMemory,
+                        @Qualifier("faqChatMemory") ChatMemory faqChatMemory,
                         VectorStore vectorStore) {
 
+        // 0.5 similarity threshold is appropriate for text-embedding-3-small:
+        // cosine similarity for semantically related but paraphrased questions
+        // typically falls in the 0.5–0.75 range with this model. The previous
+        // threshold of 0.8 was too strict, causing the advisor to return no
+        // documents even when relevant FAQs were present in the vector store.
         var faqAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
                 .searchRequest(SearchRequest.builder()
-                        .similarityThreshold(0.8d)
+                        .similarityThreshold(0.5d)
                         .topK(6)
                         .build())
                 .build();
@@ -200,7 +121,7 @@ class ChatClientConfig {
         return ChatClient.builder(chatModel)
                 .defaultSystem(FAQ_SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        MessageChatMemoryAdvisor.builder(faqChatMemory).build(),
                         faqAdvisor
                 )
                 .build();
@@ -209,7 +130,7 @@ class ChatClientConfig {
     @Bean
     @Qualifier("propertyAgent")
     ChatClient propertyAgent(OpenAiChatModel chatModel,
-                             ChatMemory chatMemory,
+                             @Qualifier("propertyChatMemory") ChatMemory propertyChatMemory,
                              List<McpAsyncClient> mcpAsyncClients) {
 
         List<McpAsyncClient> propertyClients = mcpAsyncClients.stream()
@@ -221,7 +142,7 @@ class ChatClientConfig {
         return ChatClient.builder(chatModel)
                 .defaultSystem(PROPERTY_SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                        MessageChatMemoryAdvisor.builder(propertyChatMemory).build()
                 )
                 .defaultTools(toolCallbackProvider)
                 .build();
@@ -230,7 +151,7 @@ class ChatClientConfig {
     @Bean
     @Qualifier("reservationAgent")
     ChatClient reservationAgent(OpenAiChatModel chatModel,
-                                ChatMemory chatMemory,
+                                @Qualifier("reservationChatMemory") ChatMemory reservationChatMemory,
                                 List<McpAsyncClient> mcpAsyncClients) {
 
         List<McpAsyncClient> reservationClients = mcpAsyncClients.stream()
@@ -242,7 +163,7 @@ class ChatClientConfig {
         return ChatClient.builder(chatModel)
                 .defaultSystem(RESERVATION_SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                        MessageChatMemoryAdvisor.builder(reservationChatMemory).build()
                 )
                 .defaultTools(toolCallbackProvider)
                 .build();

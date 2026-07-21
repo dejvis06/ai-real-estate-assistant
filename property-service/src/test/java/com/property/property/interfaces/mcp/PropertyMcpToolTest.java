@@ -1,10 +1,11 @@
 package com.property.property.interfaces.mcp;
 
 import com.property.property.application.dto.PropertyResponse;
-import com.property.property.domain.model.PropertySearchParams;
 import com.property.property.application.service.PropertyApplicationService;
+import com.property.property.domain.model.PropertySearchParams;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,45 +32,85 @@ class PropertyMcpToolTest {
     // ── searchProperties ─────────────────────────────────────────────────────
 
     @Test
-    void searchProperties_shouldDelegateParamsToApplicationService() {
-        var params = new PropertySearchParams(
-                null, null, "APARTMENT", "SALE", "AVAILABLE",
-                "Tirana", null,
+    void searchProperties_shouldDelegateAllParamsToApplicationService() {
+        when(propertyApplicationService.searchProperties(any())).thenReturn(List.of(buildResponse("PROP-1001")));
+
+        tool.searchProperties(
+                "Luxury", "spacious", "APARTMENT", "SALE", "AVAILABLE",
+                "Tirana", "Albania",
                 new BigDecimal("100000"), new BigDecimal("200000"),
-                2, null,
+                2, 4,
+                1, 2,
+                new BigDecimal("60"), new BigDecimal("150"),
+                1, 5,
+                2010, 2023
+        );
+
+        var captor = ArgumentCaptor.forClass(PropertySearchParams.class);
+        verify(propertyApplicationService).searchProperties(captor.capture());
+
+        PropertySearchParams params = captor.getValue();
+        assertThat(params.title()).isEqualTo("Luxury");
+        assertThat(params.description()).isEqualTo("spacious");
+        assertThat(params.propertyType()).isEqualTo("APARTMENT");
+        assertThat(params.listingType()).isEqualTo("SALE");
+        assertThat(params.status()).isEqualTo("AVAILABLE");
+        assertThat(params.city()).isEqualTo("Tirana");
+        assertThat(params.country()).isEqualTo("Albania");
+        assertThat(params.minPrice()).isEqualTo(new BigDecimal("100000"));
+        assertThat(params.maxPrice()).isEqualTo(new BigDecimal("200000"));
+        assertThat(params.minBedrooms()).isEqualTo(2);
+        assertThat(params.maxBedrooms()).isEqualTo(4);
+        assertThat(params.minBathrooms()).isEqualTo(1);
+        assertThat(params.maxBathrooms()).isEqualTo(2);
+        assertThat(params.minArea()).isEqualTo(new BigDecimal("60"));
+        assertThat(params.maxArea()).isEqualTo(new BigDecimal("150"));
+        assertThat(params.minFloor()).isEqualTo(1);
+        assertThat(params.maxFloor()).isEqualTo(5);
+        assertThat(params.minYearBuilt()).isEqualTo(2010);
+        assertThat(params.maxYearBuilt()).isEqualTo(2023);
+    }
+
+    @Test
+    void searchProperties_withAllNulls_shouldPassEmptyParamsToService() {
+        when(propertyApplicationService.searchProperties(any())).thenReturn(List.of());
+
+        tool.searchProperties(
+                null, null, null, null, null,
+                null, null,
+                null, null,
+                null, null,
                 null, null,
                 null, null,
                 null, null,
                 null, null
         );
-        when(propertyApplicationService.searchProperties(params))
-                .thenReturn(List.of(buildResponse("PROP-1001")));
 
-        List<PropertyResponse> result = tool.searchProperties(params);
+        var captor = ArgumentCaptor.forClass(PropertySearchParams.class);
+        verify(propertyApplicationService).searchProperties(captor.capture());
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).referenceCode()).isEqualTo("PROP-1001");
-        verify(propertyApplicationService).searchProperties(params);
-    }
-
-    @Test
-    void searchProperties_withEmptyParams_shouldPassThroughToService() {
-        var params = emptyParams();
-        when(propertyApplicationService.searchProperties(params)).thenReturn(List.of());
-
-        List<PropertyResponse> result = tool.searchProperties(params);
-
-        assertThat(result).isEmpty();
-        verify(propertyApplicationService).searchProperties(params);
+        PropertySearchParams params = captor.getValue();
+        assertThat(params.title()).isNull();
+        assertThat(params.city()).isNull();
+        assertThat(params.minPrice()).isNull();
+        assertThat(params.minBedrooms()).isNull();
     }
 
     @Test
     void searchProperties_shouldReturnAllResultsFromService() {
-        var params = emptyParams();
-        when(propertyApplicationService.searchProperties(params))
+        when(propertyApplicationService.searchProperties(any()))
                 .thenReturn(List.of(buildResponse("PROP-1001"), buildResponse("PROP-1003")));
 
-        List<PropertyResponse> result = tool.searchProperties(params);
+        List<PropertyResponse> result = tool.searchProperties(
+                null, null, null, null, null,
+                null, null,
+                null, null,
+                null, null,
+                null, null,
+                null, null,
+                null, null,
+                null, null
+        );
 
         assertThat(result).hasSize(2);
         assertThat(result).extracting(PropertyResponse::referenceCode)
@@ -109,19 +151,6 @@ class PropertyMcpToolTest {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
-
-    private PropertySearchParams emptyParams() {
-        return new PropertySearchParams(
-                null, null, null, null, null,
-                null, null,
-                null, null,
-                null, null,
-                null, null,
-                null, null,
-                null, null,
-                null, null
-        );
-    }
 
     private PropertyResponse buildResponse(String referenceCode) {
         return new PropertyResponse(

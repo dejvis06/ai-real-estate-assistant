@@ -1,35 +1,33 @@
 package com.property.property.domain.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.math.BigDecimal;
 
 public record PropertySearchParams(
 
-        @JsonProperty String title,
-        @JsonProperty String description,
-        @JsonProperty String propertyType,
-        @JsonProperty String listingType,
-        @JsonProperty String status,
+        String title,
+        String description,
+        String propertyType,
+        String listingType,
+        String status,
 
-        @JsonProperty String city,
-        @JsonProperty String country,
+        String city,
+        String country,
 
-        @JsonProperty BigDecimal minPrice,
-        @JsonProperty BigDecimal maxPrice,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
 
-        @JsonProperty Integer minBedrooms,
-        @JsonProperty Integer maxBedrooms,
+        Integer minBedrooms,
+        Integer maxBedrooms,
 
-        @JsonProperty Integer minBathrooms,
-        @JsonProperty Integer maxBathrooms,
+        Integer minBathrooms,
+        Integer maxBathrooms,
 
-        @JsonProperty BigDecimal minArea,
-        @JsonProperty BigDecimal maxArea,
+        BigDecimal minArea,
+        BigDecimal maxArea,
 
-        @JsonProperty Integer minFloor,
-        @JsonProperty Integer maxFloor,
+        Integer minFloor,
+        Integer maxFloor,
 
-        @JsonProperty Integer minYearBuilt,
-        @JsonProperty Integer maxYearBuilt
+        Integer minYearBuilt,
+        Integer maxYearBuilt
 ) {}
